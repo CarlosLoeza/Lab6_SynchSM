@@ -68,96 +68,10 @@ void TimerSet(unsigned long M){
     _avr_timer_cntcurr =  _avr_timer_M;
 }
 
-/*
-enum TurnOn_State {TurnOn_Start, TurnOn_B0, TurnOn_B1, TurnOn_B2, TurnOn_waitB0, TurnOn_waitB1} TurnOn_State;
-
-void Tick(){
-    // Transitions
-    switch(TurnOn_State){
-        case TurnOn_Start:
-            TurnOn_State = TurnOn_B0;
-            i =0;
-            break;
-        // light up B0 or continue to next state
-        case TurnOn_B0:
-            if (button){
-                TurnOn_State =  TurnOn_waitB0;
-            }
-            else{
-                TurnOn_State = TurnOn_B1;
-            }
-            break;
-
-        // Light up B1 again
-        case TurnOn_waitB0:
-            if (!button)
-                TurnOn_State = TurnOn_waitB0;
-            else if (button && i ==0)
-                TurnOn_State = TurnOn_B1;
-            else if (button && i == 1)
-                TurnOn_State = TurnOn_B0;
-            break;
-
-        // wait
-        case TurnOn_B1:
-            if(!button && i == 0)
-                TurnOn_State = TurnOn_B2;
-            else if (!button && i==1)
-                TurnOn_State = TurnOn_B0;
-            else if (button && i == 0)
-                TurnOn_State = TurnOn_waitB1;
-            else if (button && i==1)
-                TurnOn_State = TurnOn_waitB0;           
-            break;
-            
-        // Wait
-        case TurnOn_waitB1:
-            if(!button)
-                TurnOn_State = TurnOn_waitB1;
-            else if (button && i==0)
-                TurnOn_State = TurnOn_B2;
-            else if (button && i==1)
-                TurnOn_State = TurnOn_B1;
-            break;
-        
-        // Light up B2
-        case TurnOn_B2:
-            if(!button)
-                TurnOn_State = TurnOn_B1;
-            else if (button && i==1)
-                TurnOn_State = TurnOn_waitB1;
-            break;
-         
-            
-        default:
-            TurnOn_State = TurnOn_Start;
-            break;
-    }
-
-    // Actions
-    switch(TurnOn_State){
-        case TurnOn_B0:
-            i =0;
-            PORTB = 0x01;
-            break;
-        
-        case TurnOn_B1:
-            PORTB = 0x02;
-            break;
-        
-        case TurnOn_B2:
-            i =1;
-            PORTB = 0x04;
-            break;
-
-        default:
-            break;
-        }
-}
-*/
 
 unsigned char tmpA;
 unsigned char count;
+unsigned char i;
 enum Count_States {Count_Start, Count_Wait, Count_Up, Count_Up_Wait, Count_Down, Count_Down_Wait, Count_Zero, Count_Reset} Count_State;
 
 void Increment_Decrement(){
@@ -192,8 +106,12 @@ void Increment_Decrement(){
 	    if(tmpA == 0){
 		Count_State = Count_Wait;
 	    }
-	    else if(tmpA == 0x01){
+	    else if(tmpA == 0x01 && i<10){
 		Count_State = Count_Up_Wait;
+	    	i++;
+	    } else if(tmpA == 0x01 && i == 10){
+		Count_State = Count_Up;
+		i = 0;
 	    }else if (tmpA == 0x02){
 		Count_State = Count_Down;
 	    } else if (tmpA == 0x03){
@@ -217,9 +135,14 @@ void Increment_Decrement(){
 	    }
 	    else if(tmpA == 0x01){ 
                 Count_State = Count_Up;
-            } else if (tmpA == 0x02){ 
+            } else if (tmpA == 0x02 && i > 0){ 
                 Count_State = Count_Down_Wait;
-            } else if (tmpA == 0x03){ 
+		i--;
+            } else if(tmpA == 0x02 && i == 0){
+		Count_State = Count_Down;
+		i = 7;
+	    } 
+	    else if (tmpA == 0x03){ 
                 Count_State = Count_Zero;
             }
 	    break;
@@ -267,6 +190,7 @@ int main(void)
     DDRA = 0x00; PORTA = 0xFF; 
     DDRC = 0xFF; PORTC = 0x00; 
     count = 7;
+    i=0;
     
     TimerSet(100);
     TimerOn();
